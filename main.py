@@ -23,7 +23,6 @@ def search_items(expr: str):
         # Filter items using the regular expression
         pattern = re.compile(expr)
         filtered_items = [chars for py, chars in concatenated_items if pattern.search(py)]
-
         return filtered_items
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -34,7 +33,6 @@ def match(expr: str):
     result=expr
     result=result.replace('\"','\\b')
     result=result.replace('?', '\S')
-    #print(result)
     return result
 
 
