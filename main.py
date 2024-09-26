@@ -1,7 +1,7 @@
 import sqlite3
 import re
 from fastapi import FastAPI, HTTPException
-
+import time
 app = FastAPI()
 
 def search_items(expr: str):
@@ -23,6 +23,9 @@ def search_items(expr: str):
         # Filter items using the regular expression
         pattern = re.compile(expr)
         filtered_items = [chars for py, chars in concatenated_items if pattern.search(py)]
+
+        # Combine the characters into a single string
+        filtered_items = [''.join(chars) for chars in filtered_items]
         return filtered_items
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -30,13 +33,23 @@ def search_items(expr: str):
         conn.close()
 
 def match(expr: str):
-    result=expr
-    result=result.replace('\"','\\b')
-    result=result.replace('?', '\S')
+    # Convert the input expression to a regex
+    # "*" is replaced with a match for a pinyin word of 2 to 6 characters (syllables)
+    result = expr
+    result = result.replace('"', '\\b')  # Replace " with word boundaries
+    result = result.replace('*', '\\S{1,6}')  # Replace * with a non-whitespace syllable of length 2 to 6
+    #result = result.replace(' ', '\\s+')  # Ensure spaces between syllables are handled correctly
+    result = result.replace('?', '\\S')
     return result
 
+@app.get("/")
+async def getRoot():
+    #return time now
+    return {"result": time.time()}
 
 @app.get("/get/{expr}")
 async def getResults(expr: str):
-    results = search_items(match(expr))
+    # Pass the expression through the match function
+    regex_pattern = match(expr)
+    results = search_items(regex_pattern)
     return {"results": results}
